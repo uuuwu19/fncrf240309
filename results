@@ -1,0 +1,49 @@
+import json
+import requests
+from bs4 import BeautifulSoup
+
+# URL of the webpage to scrape
+url = "https://liquipedia.net/apexlegends/Apex_Legends_Global_Series/2024/Split_1/Pro_League/APAC_North/Final"
+
+# Send a GET request to the URL
+response = requests.get(url)
+
+# Parse the HTML content
+soup = BeautifulSoup(response.content, "html.parser")
+
+# Find the elements containing team names, kills, placements, and match points
+team_elements = soup.find_all("div", class_="team-template-text")
+kills_elements = soup.find_all("div", class_="team-template-k")
+placement_elements = soup.find_all("div", class_="team-template-p")
+mp_elements = soup.find_all("div", class_="team-template-mp")
+
+# Extract team names, kills, placements, and match points
+team_names = [team.text.strip() for team in team_elements]
+kills_data = [kills.text.strip().split() for kills in kills_elements]
+placement_data = [placement.text.strip().split() for placement in placement_elements]
+mp_data = [mp.text.strip().split() for mp in mp_elements]
+
+# Include FNC (Fnatic) in the extracted data
+fnc_index = team_names.index("Fnatic")
+fnc_kills = kills_data[fnc_index]
+fnc_placement = placement_data[fnc_index]
+fnc_mp = mp_data[fnc_index]
+
+# Organize the data
+team_stats = {}
+for i in range(len(team_names)):
+    team_stats[team_names[i]] = {"kills": kills_data[i], "placement": placement_data[i], "mp": mp_data[i]}
+
+# Generate HTML content
+html_content = "<html><head><title>Apex Legends Results</title></head><body>"
+for team, stats in team_stats.items():
+    html_content += f"<h2>{team}</h2>"
+    html_content += "<ul>"
+    for round_num, (kills, placement, mp) in enumerate(zip(stats['kills'], stats['placement'], stats['mp']), 1):
+        html_content += f"<li>Round {round_num}: Kills - {kills}, Placement - {placement}, MP - {mp}</li>"
+    html_content += "</ul>"
+html_content += "</body></html>"
+
+# Write HTML content to a file
+with open("apex_legends_results.html", "w") as html_file:
+    html_file.write(html_content)
